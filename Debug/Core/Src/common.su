@@ -1,0 +1,17 @@
+common.c:33:6:set	16	static
+common.c:95:6:CalcPoleDist	32	static
+common.c:107:6:RobotStart	8	static
+common.c:158:6:NormalControl	8	static
+common.c:314:6:Init	8	static
+common.c:425:6:PS4Tune	16	static
+common.c:604:6:RNS_config	56	static
+common.c:645:6:manual_mode	8	static
+common.c:660:6:enq	8	static
+common.c:688:6:Await	16	static
+common.c:704:6:ILI9341_Init_List	24	static
+common.c:718:6:ILI9341_Update_List	128	static
+common.c:735:6:registerPath	28	static
+common.c:748:6:esp32Init	16	static
+common.c:753:6:esp32StartSend	8	static
+common.c:757:6:esp32StopSend	8	static
+common.c:761:6:esp32Handler	8	static
