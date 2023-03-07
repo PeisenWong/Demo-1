@@ -1,2 +1,4 @@
-obstacle_detect.c:3:6:LidarInit	16	static
-obstacle_detect.c:10:6:ObstacleHandler	24	static
+obstacle_detect.c:3:6:LidarInit	40	static
+obstacle_detect.c:27:6:LidarSendIns	16	static
+obstacle_detect.c:37:6:LidarGo	64	static
+obstacle_detect.c:61:6:ObstacleHandler	32	static

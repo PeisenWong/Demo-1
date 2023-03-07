@@ -128,6 +128,8 @@ void VESCPIDProcess(float a, float b, float c, float d)
 	fFRightVelErr = b - VESCNav.b_vel;
 	fBLeftVelErr = c - VESCNav.c_vel;
 	fBRightVelErr = d - VESCNav.d_vel;
+
+	sys.navi_vel = 1;
 }
 
 /*
@@ -153,8 +155,8 @@ void VESCPIDAct(void)
  */
 void VESCNav5ms()
 {
-	fXEncData = VESCNav.xPtd * (QEIRead(QEI1) - 500);
-	fYEncData = VESCNav.yPtd * (QEIRead(QEI4) - 500);
+	fXEncData = 0.05 / 4000.0 * 3.142 * (QEIRead(QEI1) - 500);
+	fYEncData = 0.05 / 4000.0 * 3.142 * (QEIRead(QEI4) - 500);
 
 	ABT(&x_data);
 	ABT(&y_data);

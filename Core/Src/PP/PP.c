@@ -31,6 +31,7 @@ void PPInit(uint8_t base,float *qeix, float *qeiy, float*imu,PathPlan_t *pp)
 	pp->yaw_offset=*(pp->yaw);
 	pp->prev_real_z = 0;
 	pp->real_z = 0;
+	pp->rotate_only = 0;
 }
 
 void PP_PIDPathSet(float kp, float ki, float kd, PathPlan_t *pp)
@@ -64,7 +65,7 @@ void PP_PIDEndSet(float kp, float ki, float kd, PathPlan_t *pp)
 	pp->kd[1]=kd;
 }
 
-void PP_start(float** point,int no_point,PathPlan_t *pp)
+void PP_start(float point[][7],int no_point,PathPlan_t *pp)
 {
 	int i;
 	for(i=0;i<no_point;i++)
@@ -85,16 +86,92 @@ void PP_start(float** point,int no_point,PathPlan_t *pp)
 
 	pp->target_point=no_point;
 
-	if(fabs(pp->real_x - pp->target_x[0]))
-		PIDGainSet(KE,1.0/fabs(pp->real_x - pp->target_x[0]),&(pp->x));
-	else
-		PIDGainSet(KE,1.0,&(pp->x));
+	if(pp->target_point == 1)
+	{
+		if(fabs(pp->real_x - pp->target_x[0]) >= pp->f_tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_x - pp->target_x[0]),&(pp->x));
+		else
+			PIDGainSet(KE,1.0,&(pp->x));
 
-	if(fabs(pp->real_y - pp->target_y[0]))
-		PIDGainSet(KE,1.0/fabs(pp->real_y - pp->target_y[0]),&(pp->y));
+		if(fabs(pp->real_y - pp->target_y[0]) >= pp->f_tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_y - pp->target_y[0]),&(pp->y));
 
+		else
+			PIDGainSet(KE,1.0,&(pp->y));
+	}
 	else
-		PIDGainSet(KE,1.0,&(pp->y));
+	{
+		if(fabs(pp->real_x - pp->target_x[0]) >= pp->tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_x - pp->target_x[0]),&(pp->x));
+		else
+			PIDGainSet(KE,1.0,&(pp->x));
+
+		if(fabs(pp->real_y - pp->target_y[0]) >= pp->tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_y - pp->target_y[0]),&(pp->y));
+
+		else
+			PIDGainSet(KE,1.0,&(pp->y));
+	}
+
+	PIDGainSet(KU,pp->ku_x[0],&(pp->x));
+	PIDGainSet(KU,pp->ku_y[0],&(pp->y));
+
+	pp->point_count=0;
+	pp->crnt_crv_pt=0;
+	pp->pp_crv_calc=0;
+	pp->pp_start=1;
+	sys.navi_vel = 1;
+	pp->final_f=0;
+	pp->rotate=0;
+}
+
+void ROS_PP_start(float** point,int no_point,PathPlan_t *pp)
+{
+	int i;
+	for(i=0;i<no_point;i++)
+	{
+		pp->target_vel[i] = point[i][0];
+		pp->target_x[i] = point[i][1];
+		pp->target_y[i] = point[i][2];
+		pp->target_accurate[i] = point[i][5]; // point_lock
+		pp->pp_crv_radius[i] =  point[i][6];
+		if(i == 0)
+			pp->target_angle1[0] = atanf((fabs)(point[0][2] - pp->real_y) / (fabs)(point[0][1]- pp->real_x));
+		else
+			pp->target_angle1[i]= atanf((fabs)(point[i][2]-point[i-1][2]) / (fabs)(point[i][1]-point[i-1][1]));
+		pp->target_z[i] = point[i][3];
+		pp->ku_x[i] = point[i][4]* cosf(pp->target_angle1[i]);  // xy-pid
+		pp->ku_y[i] = point[i][4]* sinf(pp->target_angle1[i]);
+	}
+
+	pp->target_point=no_point;
+
+	if(pp->target_point == 1)
+	{
+		if(fabs(pp->real_x - pp->target_x[0]) >= pp->f_tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_x - pp->target_x[0]),&(pp->x));
+		else
+			PIDGainSet(KE,1.0,&(pp->x));
+
+		if(fabs(pp->real_y - pp->target_y[0]) >= pp->f_tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_y - pp->target_y[0]),&(pp->y));
+
+		else
+			PIDGainSet(KE,1.0,&(pp->y));
+	}
+	else
+	{
+		if(fabs(pp->real_x - pp->target_x[0]) >= pp->tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_x - pp->target_x[0]),&(pp->x));
+		else
+			PIDGainSet(KE,1.0,&(pp->x));
+
+		if(fabs(pp->real_y - pp->target_y[0]) >= pp->tol_xy)
+			PIDGainSet(KE,1.0/fabs(pp->real_y - pp->target_y[0]),&(pp->y));
+
+		else
+			PIDGainSet(KE,1.0,&(pp->y));
+	}
 
 
 	PIDGainSet(KU,pp->ku_x[0],&(pp->x));
@@ -107,12 +184,6 @@ void PP_start(float** point,int no_point,PathPlan_t *pp)
 	sys.navi_vel = 1;
 	pp->final_f=0;
 	pp->rotate=0;
-
-	//	sprintf(uartbuff,"%f %f %f %f %f %f %f\r\n",point[0][0],point[0][1],
-	//			point[0][2],point[0][3],point[0][4],
-	//			point[0][5],point[0][6]);
-	//						UARTPrintString(UART5,uartbuff);
-
 }
 
 void PP_stop (PathPlan_t *pp)
@@ -170,12 +241,12 @@ void PathPlan (PathPlan_t *pp)
 		pp->pos_x=*(pp->qeix);
 		pp->pos_y=*(pp->qeiy);
 
-		if(*(pp->yaw) < 50.0){
+		if(*(pp->yaw) < 30.0){
 			if(pp->prev_yaw > 330.0){
 				pp->yaw_constant++;
 			}
 		}else if(*(pp->yaw) > 330.0){
-			if(pp->prev_yaw < 50.0){
+			if(pp->prev_yaw < 30.0){
 				pp->yaw_constant--;
 			}
 		}
@@ -195,12 +266,8 @@ void PathPlan (PathPlan_t *pp)
 		pp->prev_x = pp->pos_x;
 		pp->prev_y = pp->pos_y;
 
-		pp->fWVel = (pp->real_z_rad - pp->prev_real_z_rad) / 0.005;
-
 		pp->prev_real_x = pp->real_x;
 		pp->prev_real_y = pp->real_y;
-		pp->prev_real_z= pp->real_z;
-		pp->prev_real_z_rad = pp->real_z_rad;
 	}
 
 
@@ -536,50 +603,50 @@ void PathPlan (PathPlan_t *pp)
 						pp->error_y = pp->target_y[pp->point_count] - pp->real_y;
 						pp->error_z = pp->target_z[pp->point_count] - pp->real_z;
 						if(pp->target_x[pp->point_count]-pp->real_x){
-							PIDGainInit(0.005,
-									1.0,
-									1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),
-									pp->ku_x[pp->point_count],
-									pp->kp[0],
-									pp->ki[0],
-									pp->kd[0],
-									30.0,
-									&(pp->x));
-							//								PIDGainSet(KE,1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),&(pp->x));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),
+//									pp->ku_x[pp->point_count],
+//									pp->kp[0],
+//									pp->ki[0],
+//									pp->kd[0],
+//									30.0,
+//									&(pp->x));
+							PIDGainSet(KE,1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),&(pp->x));
 						} else {
-							PIDGainInit(0.005,
-									1.0,
-									1.0,
-									pp->ku_x[pp->point_count],
-									pp->kp[0],
-									pp->ki[0],
-									pp->kd[0],
-									30.0,
-									&(pp->x));
-							//								PIDGainSet(KE,1.0,&(pp->x));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0,
+//									pp->ku_x[pp->point_count],
+//									pp->kp[0],
+//									pp->ki[0],
+//									pp->kd[0],
+//									30.0,
+//									&(pp->x));
+							PIDGainSet(KE,1.0,&(pp->x));
 						}
 						if(pp->target_y[pp->point_count]-pp->real_y){
-							PIDGainInit(0.005,
-									1.0,
-									1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),
-									pp->ku_y[pp->point_count],
-									pp->kp[0],
-									pp->ki[0],
-									pp->kd[0],
-									30.0,
-									&(pp->y));
-							//								PIDGainSet(KE,1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),&(pp->y));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),
+//									pp->ku_y[pp->point_count],
+//									pp->kp[0],
+//									pp->ki[0],
+//									pp->kd[0],
+//									30.0,
+//									&(pp->y));
+							PIDGainSet(KE,1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),&(pp->y));
 						} else {
-							PIDGainInit(0.005,
-									1.0,
-									1.0,
-									pp->ku_y[pp->point_count],
-									pp->kp[0],
-									pp->ki[0],
-									pp->kd[0],
-									30.0,
-									&(pp->y));
-							//								PIDGainSet(KE,1.0,&(pp->y));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0,
+//									pp->ku_y[pp->point_count],
+//									pp->kp[0],
+//									pp->ki[0],
+//									pp->kd[0],
+//									30.0,
+//									&(pp->y));
+							PIDGainSet(KE,1.0,&(pp->y));
 						}
 					}
 				} else if(pp->point_count == (pp->target_point - 2)){ // Reached second last going last point
@@ -644,50 +711,50 @@ void PathPlan (PathPlan_t *pp)
 						pp->error_y = pp->target_y[pp->point_count] - pp->real_y;
 						pp->error_z = pp->target_z[pp->point_count] - pp->real_z;
 						if(pp->target_x[pp->point_count]-pp->real_x){
-							PIDGainInit(0.005,
-									1.0,
-									1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),
-									pp->ku_x[pp->point_count],
-									pp->kp[1],
-									pp->ki[1],
-									pp->kd[1],
-									30.0,
-									&(pp->x));
-							//								PIDGainSet(KE,1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),&(pp->x));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),
+//									pp->ku_x[pp->point_count],
+//									pp->kp[1],
+//									pp->ki[1],
+//									pp->kd[1],
+//									30.0,
+//									&(pp->x));
+							PIDGainSet(KE,1.0/fabs(pp->target_x[pp->point_count]-pp->real_x),&(pp->x));
 						} else {
-							PIDGainInit(0.005,
-									1.0,
-									1.0,
-									pp->ku_x[pp->point_count],
-									pp->kp[1],
-									pp->ki[1],
-									pp->kd[1],
-									30.0,
-									&(pp->x));
-							//								PIDGainSet(KE,1.0,&(pp->x));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0,
+//									pp->ku_x[pp->point_count],
+//									pp->kp[1],
+//									pp->ki[1],
+//									pp->kd[1],
+//									30.0,
+//									&(pp->x));
+							PIDGainSet(KE,1.0,&(pp->x));
 						}
 						if(pp->target_y[pp->point_count]-pp->real_y){
-							PIDGainInit(0.005,
-									1.0,
-									1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),
-									pp->ku_y[pp->point_count],
-									pp->kp[1],
-									pp->ki[1],
-									pp->kd[1],
-									30.0,
-									&(pp->y));
-							//								PIDGainSet(KE,1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),&(pp->y));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),
+//									pp->ku_y[pp->point_count],
+//									pp->kp[1],
+//									pp->ki[1],
+//									pp->kd[1],
+//									30.0,
+//									&(pp->y));
+							PIDGainSet(KE,1.0/fabs(pp->target_y[pp->point_count]-pp->real_y),&(pp->y));
 						} else {
-							PIDGainInit(0.005,
-									1.0,
-									1.0,
-									pp->ku_y[pp->point_count],
-									pp->kp[1],
-									pp->ki[1],
-									pp->kd[1],
-									30.0,
-									&(pp->y));
-							//								PIDGainSet(KE,1.0,&(pp->y));
+//							PIDGainInit(0.005,
+//									1.0,
+//									1.0,
+//									pp->ku_y[pp->point_count],
+//									pp->kp[1],
+//									pp->ki[1],
+//									pp->kd[1],
+//									30.0,
+//									&(pp->y));
+							PIDGainSet(KE,1.0,&(pp->y));
 						}
 					}
 				}else if(fabs(pp->error_x)<pp->f_tol_xy && fabs(pp->error_y)<pp->f_tol_xy && (int)pp->error_z<=pp->f_tol_z){ // Reached last point
@@ -727,13 +794,17 @@ void PathPlan (PathPlan_t *pp)
 				if ((pp->dx != 0.0 || pp->dx != -0.0)&&(pp->dy != -0.0 || pp->dy != 0.0)){
 					pp->heading = atan2f(pp->dy, pp->dx);
 				} else {
-					if((pp->dx == 0.0 || pp->dx == -0.0) && pp->dy < 0.0) {
-						pp->heading = 1.5708;
-					} else if((pp->dx == 0.0 || pp->dx == -0.0) && pp->dy > 0.0) {
+					if((pp->dx == 0.0 || pp->dx == -0.0) && pp->dy < 0.0) { // Backward
 						pp->heading = -1.5708;
-					} else {
+					} else if((pp->dx == 0.0 || pp->dx == -0.0) && pp->dy > 0.0) { // Forward
+						pp->heading = 1.5708;
+					} else if((pp->dy == 0.0 || pp->dy == -0.0) && pp->dx > 0){ // Right
 						pp->heading = 0.0;
-						pp->rotate = 1;
+//						pp->rotate = 1;
+					}
+					else if((pp->dy == 0.0 || pp->dy == -0.0) && pp->dx < 0) // Left
+					{
+						pp->heading = M_PI;
 					}
 				}
 
@@ -754,18 +825,24 @@ void PathPlan (PathPlan_t *pp)
 				pp->rvy =   pp->vx*sinf(pp->real_z_rad) + pp->vy*cosf(pp->real_z_rad);
 
 				if(pp->base_shape== 0){
-					pp->u1 = 0.707107 * ( pp->ruy - pp->rux) - (pp->outz * 1.0);
-					pp->u2 = 0.707107 * ( pp->ruy + pp->rux) + (pp->outz * 1.0);
+					pp->u1 = 0.707107 * ( pp->ruy + pp->rux) + (pp->outz * 1.0);
+					pp->u2 = 0.707107 * ( pp->ruy - pp->rux) - (pp->outz * 1.0);
 					pp->u3 = 0.707107 * ( pp->ruy - pp->rux) + (pp->outz * 1.0);
 					pp->u4 = 0.707107 * ( pp->ruy + pp->rux) - (pp->outz * 1.0);
 
-					pp->v1 = 0.707107 * ( pp->rvy - pp->rvx) + pp->u1;
-					pp->v2 = 0.707107 * ( pp->rvy + pp->rvx) + pp->u2;
+//					pp->u1 = (pp->outz * 1.0);
+//					pp->u2 = -pp->outz * 1.0;
+//					pp->u3 = (pp->outz * 1.0);
+//					pp->u4 = -(pp->outz * 1.0);
+
+
+					pp->v1 = 0.707107 * ( pp->rvy + pp->rvx) + pp->u1;
+					pp->v2 = 0.707107 * ( pp->rvy - pp->rvx) + pp->u2;
 					pp->v3 = 0.707107 * ( pp->rvy - pp->rvx) + pp->u3;
 					pp->v4 = 0.707107 * ( pp->rvy + pp->rvx) + pp->u4;
 
 					//				pp->move(pp->v2,pp->v1,pp->v3,pp->v4,pp->rns);
-				} else if(pp->base_shape==1){
+				} else if(pp->base_shape== 1){
 
 					pp->u1 = (0.866 * pp->ruy) - (0.5 * pp->rux) + (pp->outz * 1.0);
 					pp->u2 = (0.866 * pp->ruy) + (0.5 * pp->rux) - (pp->outz * 1.0);
@@ -775,6 +852,7 @@ void PathPlan (PathPlan_t *pp)
 					pp->v3 = 1.0 * pp->rvx + pp->u3;
 					//				pp->move(pp->v2,pp->v1,pp->v3,0.0,pp->rns);
 				}
+//				hb_count = HAL_GetTick();
 
 			}
 		}

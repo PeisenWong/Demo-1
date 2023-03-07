@@ -7,10 +7,10 @@
 #include "math.h"
 
 /* SAT, KE, KU, KP, KI, KD, KN */
-float fFLeftVG[7] = {1.0, 1.0 / 22.44, 3999, 1.42, 1.19, 0.00, 60.0};
-float fFRightVG[7] = {1.0, 1.0 / 22.44, 3999, 1.36, 1.27, 0.0028, 60.0};
-float fBLeftVG[7] = {1.0, 1.0 / 22.44, 3999, 1.58, 1.23, 0.00, 60.0};
-float fBRightVG[7] = {1.0, 1.0 / 22.44, 3999, 1.55, 1.34, 0.00, 60.0};
+float fFLeftVG[7] = {1.0, 1.0 / 22.44, 4999, 1.42, 1.5, 0.001, 60.0};
+float fFRightVG[7] = {1.0, 1.0 / 22.44, 4999, 1.36, 1.5, 0.001, 60.0};
+float fBLeftVG[7] = {1.0, 1.0 / 22.44, 4999, 1.58, 1.5, 0.001, 60.0};
+float fBRightVG[7] = {1.0, 1.0 / 22.44, 4999, 1.55, 1.5, 0.001, 60.0};
 
 // For ABT of x, y
 float fXPosGain[3] = {0.8, 0.4, 0.2};
@@ -34,17 +34,16 @@ void set(void) {
 
 	Initialize();
 //	ROS_Navi_Init(&huart4, &huart5);
-	ROS_Init(&huart4);
-	ROS_Read_Flash();
-	PSxInitDMA(&ps4,&hi2c1);
-//	PSxInitUART(&ps4, &huart4);
-//	LidarInit(&huart5);
+//	ROS_Init(&huart4);
+//	ROS_Read_Flash();
+//	PSxInitDMA(&ps4,&hi2c1);
+	LidarInit(&huart2, DISCONTINUOUS, 0.0, 0.0, 0.0, 0.0, &lidar);
 	TIMxInit(&htim6, 5000, 84); // 5ms
 //	tuneRegister(2, &huart2);
 //	tuneRead();
 //	RNS_config(&hcan1);
-	MODNInit(MODN_FWD_OMNI, BRUSHLESS, 2.0 , 0.5, 2.0, 0.1);
-	setOrientationMODN(OPERATOR_TURNED_90_DEGREES_ANTICLOCKWISE);
+	MODNInit(MODN_FWD_OMNI, BRUSHLESS, 2.0 , 0.5, 5.0, 0.1);
+//	setOrientationMODN(OPERATOR_TURNED_90_DEGREES_ANTICLOCKWISE);
 	VESCNavInit(35000, MCCONF_SI_MOTOR_POLES / 2, 0.05 / 4000.0 * 3.142, 0.05 / 4000.0 * 3.142, 0.1, 111, 112, 113, 114);
 	VESCInit(35000, MCCONF_SI_MOTOR_POLES / 2, 0.127, 115, &flywheel1);
 	VESCInit(35000, MCCONF_SI_MOTOR_POLES / 2, 0.127, 116, &flywheel2);
@@ -68,6 +67,10 @@ void set(void) {
 	PIDDelayInit(&bright_vel);
 	PIDGainInit(SAMPLE_TIME, fBRightVG[0], fBRightVG[1], fBRightVG[2], fBRightVG[3], fBRightVG[4], fBRightVG[5], fBRightVG[6], &bright_vel);
 
+//	PIDSourceInit(&MODN.angleErr,&MODN.imuFeedback,&IMU_PID);
+//	PIDGainInit(SAMPLE_TIME, 1.0 , 1/180.0, 1.0, 10.0, 16.0, 0.05, 60.0, &IMU_PID);
+//	PIDDelayInit(&IMU_PID);
+
 	/* X & Y position ABT */
 	ABTInit(SAMPLE_TIME, fXPosGain[0], fXPosGain[1], fXPosGain[2], &fXEncData ,&fXPos, &fXVel, &fXAcc, &x_data);
 	ABTEstimateInit(&x_data);
@@ -86,7 +89,7 @@ void set(void) {
 	PPInit(0, &fXPos, &fYPos, &fyaw, &pp);
 	PP_PIDPathSet(1.0, 0.5, 0.5, &pp);
 	PP_PIDEndSet(0.5, 0.1, 0.7, &pp);
-	PP_PIDZSet(0.5, 0.05, 0.2, 5.5, &pp);
+	PP_PIDZSet(0.5, 0.05, 0.2, 3.5, &pp); // ku = 5.5
 	PP_SetCrv_Points(10, &pp);
 
 	R6091U_Init(&imu, &huart5);
@@ -165,6 +168,11 @@ void NormalControl()
 		vesc_move_speed++;
 		if(vesc_move_speed >= 5) vesc_move_speed = 5;
 		setSpeedMODN(vesc_move_speed);
+
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &fleft_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &fright_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &bleft_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &bright_vel);
 	}
 
 	if(ps4.button == R1)
@@ -173,6 +181,11 @@ void NormalControl()
 		vesc_move_speed--;
 		if(vesc_move_speed <= 0) vesc_move_speed = 0;
 		setSpeedMODN(vesc_move_speed);
+
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &fleft_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &fright_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &bleft_vel);
+//		PIDGainSet(KD, 0.0001 * vesc_move_speed / 2, &bright_vel);
 	}
 
 	// Pick
@@ -556,22 +569,22 @@ void PS4Tune()
 		while(ps4.button == OPTION);
 		switch(wheel)
 		{
-		case 2:
-			fFRightVG[3] = AP;
-			fFRightVG[4] = AI;
-			fFRightVG[5] = AD;
-			PIDGainSet(KP, AP, &fright_vel);
-			PIDGainSet(KI, AI, &fright_vel);
-			PIDGainSet(KD, AD, &fright_vel);
+		case 1:
+			fFLeftVG[3] = AP;
+			fFLeftVG[4] = AI;
+			fFLeftVG[5] = AD;
+			PIDGainSet(KP, AP, &fleft_vel);
+			PIDGainSet(KI, AI, &fleft_vel);
+			PIDGainSet(KD, AD, &fleft_vel);
 			break;
 
-		case 1:
-			fFLeftVG[3] = BP;
-			fFLeftVG[4] = BI;
-			fFLeftVG[5] = BD;
-			PIDGainSet(KP, BP, &fleft_vel);
-			PIDGainSet(KI, BI, &fleft_vel);
-			PIDGainSet(KD, BD, &fleft_vel);
+		case 2:
+			fFRightVG[3] = BP;
+			fFRightVG[4] = BI;
+			fFRightVG[5] = BD;
+			PIDGainSet(KP, BP, &fright_vel);
+			PIDGainSet(KI, BI, &fright_vel);
+			PIDGainSet(KD, BD, &fright_vel);
 			break;
 
 		case 3:

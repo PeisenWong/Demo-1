@@ -125,14 +125,16 @@ void comm_can_set_duty(uint8_t controller_id, float duty) {
 #if defined USED_CAN1
 	if(controller_id == 115 || controller_id == 116)
 	{
-		CAN_TxMsgEID(&hcan2, controller_id |
+		CAN_TxMsgEID(&hcan1, controller_id |
 				((uint32_t)CAN_PACKET_SET_DUTY << 8), buffer, send_index);
 	}
 	else
 	{
-		CAN_TxMsgEID(&hcan1, controller_id |
+		CAN_TxMsgEID(&hcan2, controller_id |
 				((uint32_t)CAN_PACKET_SET_DUTY << 8), buffer, send_index);
 	}
+//	CAN_TxMsgEID(&hcan1, controller_id |
+//			((uint32_t)CAN_PACKET_SET_DUTY << 8), buffer, send_index);
 
 
 #elif defined USED_CAN2
@@ -408,6 +410,18 @@ void decode_VESC(void){
 					VESCNav.d.info.rpm = buffer_get_float32((uint8_t*)&vescmsg.Data, 1.0, &ind);
 					VESCNav.d.info.current = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
 					VESCNav.d.info.duty = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
+				}
+				else if(id == 115)
+				{
+					flywheel1.info.rpm = buffer_get_float32((uint8_t*)&vescmsg.Data, 1.0, &ind);
+					flywheel1.info.current = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
+					flywheel1.info.duty = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
+				}
+				else if(id == 116)
+				{
+					flywheel2.info.rpm = buffer_get_float32((uint8_t*)&vescmsg.Data, 1.0, &ind);
+					flywheel2.info.current = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
+					flywheel2.info.duty = buffer_get_float16((uint8_t*)&vescmsg.Data, 1e1, &ind);
 				}
 			}
 		}

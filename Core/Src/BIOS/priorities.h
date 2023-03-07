@@ -52,18 +52,20 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 /*********** CUSTOM AREA ***********/
 
 #define I2C1_ER_IRQ_PRIO	 	0
-#define UART4_TX_IRQ_PRIO		2    // ROS Tuning
-#define UART4_RX_IRQ_PRIO		3     // ROS Tuning
+#define UART4_TX_IRQ_PRIO		1    // ROS Tuning
+#define UART4_RX_IRQ_PRIO		1     // ROS Tuning
+#define UART2_TX_IRQ_PRIO		2
+#define UART2_RX_IRQ_PRIO		2
+#define QEI1_IRQ_PRIO			3
+#define QEI4_IRQ_PRIO			4
+#define UART5_RX_IRQ_PRIO		5   // IMU 10ms
 #define UART3_TX_IRQ_PRIO		6	// Debug // 5ms
-#define UART5_RX_IRQ_PRIO		7   // IMU 10ms
 #define TIM6_IRQ_PRIO    		8     //5ms
 #define I2C1_EV_IRQ_PRIO 	 	9     //47us
 #define DMA1_Str0__IRQ_PRIO 	10
-#define UART2_TX_IRQ_PRIO		11
 #define SPI1_TX_IRQ_PRIO		13
 #define CAN1_FIFO0_IRQ_PRIO		14
 #define UART3_RX_IRQ_PRIO		14
-#define UART2_RX_IRQ_PRIO		14
 
 /******** CUSTOM AREA END***********/
 
@@ -86,8 +88,6 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values. */
 #define CAN1_FIFO1_IRQ_PRIO		14
 #define CAN2_FIFO1_IRQ_PRIO		14
 
-#define QEI1_IRQ_PRIO			14
-#define QEI4_IRQ_PRIO			14
 #define QEI6_IRQ_PRIO   		14
 
 //#define TIM6_IRQ_PRIO    		14

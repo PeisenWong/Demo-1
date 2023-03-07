@@ -84,7 +84,7 @@ void CANxInit(CAN_HandleTypeDef* hcanx,uint16_t prescaler,uint32_t FilterFIFOAss
 	sFilterConfig.FilterIdLow=0;
 	sFilterConfig.FilterMaskIdHigh=CAN_FilterMaskId_11bits <<5;
 	sFilterConfig.FilterMaskIdLow=0;
-	sFilterConfig.FilterScale=CAN_FILTERSCALE_16BIT; //set filter scale
+	sFilterConfig.FilterScale=CAN_FILTERSCALE_32BIT; //set filter scale
 	sFilterConfig.FilterBank = CAN_FilterNumber;
 
 	HAL_CAN_ConfigFilter(hcanx, &sFilterConfig);

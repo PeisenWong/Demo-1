@@ -15,7 +15,6 @@ void TuneTask(void *argument);
 void Calculation(void *argument);
 
 osThreadId_t Calculation_Task_Handle;
-
 osSemaphoreId_t CalcSemaphore;
 //void TestTask(void *argument);
 //void LaserNavigateTask(void *argument);

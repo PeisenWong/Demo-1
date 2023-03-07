@@ -104,7 +104,7 @@ typedef struct{
 			unsigned point_start:	1;
 			unsigned final_f	:	1;
 			unsigned rotate		:	1;
-			unsigned bit4		:	1;
+			unsigned rotate_only:	1; // Avoid outx, outy be Nan when error_xy = 0
 			unsigned bit5		:	1;
 			unsigned bit6		:	1;
 			unsigned bit7		:	1;
@@ -126,11 +126,12 @@ PathPlan_t pp;
 
 void PPInit(uint8_t base,float *qeix, float *qeiy, float*imu,PathPlan_t *pp);
 void PP_PIDPathSet(float kp, float ki, float kd, PathPlan_t *pp);
+void ROS_PP_start(float** point,int no_point,PathPlan_t *pp);
 void PP_PIDZSet(float kp, float ki, float kd, float ku, PathPlan_t *pp);
 void PP_PIDEndSet(float kp, float ki, float kd, PathPlan_t *pp);
 void PP_SetZ (float z,PathPlan_t *pp);
 void PP_reset (PathPlan_t *pp);
-void PP_start(float** point,int no_point, PathPlan_t *pp);
+void PP_start(float point[][7],int no_point,PathPlan_t *pp);
 void PP_stop (PathPlan_t *pp);
 void PathPlan (PathPlan_t *pp);
 void PP_setXY (int x,int y,PathPlan_t *pp);

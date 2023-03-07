@@ -647,23 +647,24 @@ void ROS_EditPath(void)
 
 void ROSTune(void)
 {
+	led3 = 0;
 	if(sys.ros_test_start)
 	{
-		PP_start(test_points, test_point_num, &pp);
+		ROS_PP_start(test_points, test_point_num, &pp);
 		sys.pp_start = 1;
 		sys.ros_test_start = 0;
 	}
 
 	if(sys.ros_path_start)
 	{
-		PP_start(PP_Points[path_index - 1], point_num[path_index - 1], &pp);
+		ROS_PP_start(PP_Points[path_index - 1], point_num[path_index - 1], &pp);
 		sys.pp_start = 1;
 		sys.ros_path_start = 0;
 	}
 
 	if(sys.ros_stop)
 	{
-		VESCNavStop();
+//		VESCNavStop();
 		PP_stop(&pp);
 		sys.pp_start = 0;
 		sys.ros_stop = 0;
@@ -672,14 +673,42 @@ void ROSTune(void)
 	if(ps4.button == CROSS) // Stop Path
 	{
 		while(ps4.button == CROSS);
-		VESCNavStop();
+		hb_count = HAL_GetTick();
 		PP_stop(&pp);
+	}
+
+	if(ps4.button == OPTION)
+	{
+		while(ps4.button == OPTION);
+		ROS_Read_Flash();
 	}
 
 	if(ps4.button == UP)
 	{
 		while(ps4.button == UP);
-		ROS_Read_Flash();
+		float point[1][7] = {{1.0, pp.real_x, pp.real_y, 45.0, 0.0, 0.0, 0.0}};
+		PP_start(point, 1, &pp);
+	}
+
+	if(ps4.button == DOWN)
+	{
+		while(ps4.button == DOWN);
+		float point[1][7] = {{1.0, pp.real_x, pp.real_y, -45.0, 0.0, 0.0, 0.0}};
+		PP_start(point, 1, &pp);
+	}
+
+	if(ps4.button == LEFT)
+	{
+		while(ps4.button == LEFT);
+		float point[1][7] = {{1.0, pp.real_x, pp.real_y, 90.0, 0.0, 0.0, 0.0}};
+		PP_start(point, 1, &pp);
+	}
+
+	if(ps4.button == RIGHT)
+	{
+		while(ps4.button == RIGHT);
+		float point[1][7] = {{1.0, pp.real_x, pp.real_y, -90.0, 0.0, 0.0, 0.0}};
+		PP_start(point, 1, &pp);
 	}
 
 	if(ps4.button == R1)
@@ -699,10 +728,10 @@ void ROSTune(void)
 
 	if(ps4.button == TRIANGLE) // Run certain path
 	{
-		while(ps4.button == TRIANGLE){}
+		while(ps4.button == TRIANGLE);
 		if(point_num[ros_counter])
 		{
-			PP_start(PP_Points[ros_counter], point_num[ros_counter], &pp);
+			ROS_PP_start(PP_Points[ros_counter], point_num[ros_counter], &pp);
 		}
 	}
 
@@ -711,7 +740,7 @@ void ROSTune(void)
 		while(ps4.button == SQUARE);
 		if(test_point_num)
 		{
-			PP_start(test_points, test_point_num, &pp);
+			ROS_PP_start(test_points, test_point_num, &pp);
 		}
 	}
 }

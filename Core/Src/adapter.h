@@ -154,7 +154,7 @@ PID_t pid_laser_R,pid_laser_L,pid_pres,pid_z;
 Srv_Drv_t srv_drv;
 Mov_Ave_t mov_l_r,mov_l_l;
 //VESC_t vesc1, vesc2, vesc3, vesc4, vesc5;
-SERVO_t vesc_ppm[3], servo, servo1, yaw_servo, pitch, pick, load;
+SERVO_t vesc_ppm[3], yaw_servo, load, pick, pitch;
 R6091U_t imu;
 
 #define PB1 		GPIOB_IN->bit7
@@ -213,14 +213,14 @@ float fXAcc, fYAcc;			/* Acceleration, ABT output*/
 float fFLeftVelR, fFRightVelR, fBLeftVelR, fBRightVelR;						/* Velocity PID reference */
 float fFLeftVelU, fFRightVelU, fBLeftVelU, fBRightVelU;						/* Velocity PID output */
 float fFLeftVelErr, fFRightVelErr, fBLeftVelErr, fBRightVelErr;				/* Velocity PID error */
-PID_t fleft_vel, fright_vel, bleft_vel, bright_vel;
+PID_t fleft_vel, fright_vel, bleft_vel, bright_vel, IMU_PID;
 
 // tune flag
 int tune_p, tune_i, tune_d, wheel;
 
 int mode, before;
 
-VESC_t flywheel1, flywheel2;
+VESC_t flywheel1, flywheel2, vesc1;
 
 union{
 	float data;

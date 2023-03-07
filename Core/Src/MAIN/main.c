@@ -6,9 +6,6 @@
  * @retval int
  */
 
-
-// shooting pitch 1200, initial 1550
-// pitch 500(right), 950(left)
 int main(void)
 {
 	set();
@@ -62,7 +59,8 @@ int main(void)
 	led3 = 0;
 	osKernelStart();
 
-	while(1){
+	while(1)
+	{
 
 	}
 }
@@ -78,12 +76,13 @@ void TIM6_DAC_IRQHandler(void)
 		switch(mode)
 		{
 			case NORMAL:
-				sprintf((char*)debug, "S: %.2f, 1: %.5f 2: %.5f 3: %.2f 4: %.2f X: %.2f Y: %.2f Z: %.2f\n", vesc_move_speed, VESCNav.a_vel, VESCNav.b_vel,
-					VESCNav.c_vel, VESCNav.d_vel, pp.real_x, pp.real_y, pp.real_z);
-//				sprintf((char*)debug, "1: %.2f 2: %.2f 3: %.2f 4: %.2f\n", fFLeftVelErr, fFRightVelErr,
-//									fBLeftVelErr, fBRightVelErr);
+//				sprintf((char*)debug, "S: %.2f, 1: %.5f 2: %.5f 3: %.2f 4: %.2f X: %.2f Y: %.2f Z: %.2f\n", vesc_move_speed, VESCNav.a_vel, VESCNav.b_vel,
+//					VESCNav.c_vel, VESCNav.d_vel, pp.real_x, pp.real_y, pp.real_z_rad);
 //				sprintf((char*)debug, "1: %.2f 2: %.2f 3: %.2f 4: %.2f\n", fFLeftVelU, fFRightVelU,
-//													fBLeftVelU, fBRightVelU);
+//									fBLeftVelU, fBRightVelU);
+//				sprintf((char*)debug, "1: %.2f 2: %.2f 3: %.2f 4: %.2f\n", VESCNav.a.info.current, VESCNav.b.info.current,
+//										VESCNav.c.info.current, VESCNav.d.info.current);
+				sprintf((char*)debug, "Z: %.2f Ex: %.2f Ux: %.2f Ey: %.2f Uy: %.2f\n", pp.real_z_rad, pp.error_x, pp.outx, pp.error_y, pp.outy);
 			break;
 
 			case INITIALIZE:
@@ -112,7 +111,7 @@ void TIM6_DAC_IRQHandler(void)
 		//
 		//	sprintf((char*)debug, "Err: %.2f Output: %.2f\n", fFLeftVelErr, fFLeftVelU);
 		//	sprintf((char*)debug, "Yaw: %.2f\n", fyaw);
-		HAL_UART_Transmit(&huart3, debug, strlen((char*)debug), HAL_MAX_DELAY);
+//		HAL_UART_Transmit(&huart3, debug, strlen((char*)debug), HAL_MAX_DELAY);
 	}
 	counter++;
 	HAL_TIM_IRQHandler(&htim6);
@@ -126,13 +125,22 @@ void MainTask(void *argument)
 		switch(mode)
 		{
 			case NORMAL:
-				if(!pp.pp_start)
+//				NormalControl();
+//				ROSTune();
+				if(!PB1)
 				{
-					NormalControl();
-//					ROSTune();
+					while(!PB1);
+					LidarSendIns(NEAR, &lidar);
 				}
-				else
-					VESCPIDProcess(pp.v1, pp.v2, pp.v3, pp.v4);
+
+				if(!PB2)
+				{
+					while(!PB2);
+					LidarSendIns(FAR, &lidar);
+				}
+
+				if(lidar.start == 1)
+					led3 = 1;
 			break;
 
 			case INITIALIZE:
@@ -150,14 +158,6 @@ void MainTask(void *argument)
 			mode++;
 			if(mode > TUNE_PID) mode = NORMAL;
 		}
-
-		if(!PB1)
-		{
-			while(!PB1);
-			mode++;
-			if(mode > TUNE_PID)
-				mode = NORMAL;
-		}
 	}
 }
 
@@ -166,7 +166,15 @@ void Calculation(void *argument)
 	while(1)
 	{
 		osSemaphoreAcquire(CalcSemaphore,osWaitForever);
-		realMODN(&ps4, &rns);
+
+		if(!pp.pp_start)
+			realMODN(&ps4, &rns);
+		else
+		{
+			VESCPIDProcess(pp.v1, pp.v2, pp.v3, pp.v4);
+			hb_count = HAL_GetTick();
+		}
+
 		VESCNav5ms();
 
 		if(flywheel)
@@ -280,10 +288,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 //	else if(huart == ROS_navi.Recv_Vel)
 //		ROS_Navi_Vel_Handler();
 
-//	if(huart == lidar_UART)
-//	{
-//		ObstacleHandler();
-//	}
+	if(huart == lidar.lidar_UART)
+	{
+		ObstacleHandler(&lidar);
+	}
 
 	if(huart == imu.huartx)
 	{

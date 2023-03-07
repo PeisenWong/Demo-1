@@ -41,6 +41,8 @@ void MODNInit(RobotBaseType_t base, MotorType_t motor, float speed, float turnSp
 	MODN.imuGain = speed*imuGain/MODN.radTol;
 	MODN.radTarget = 0.0;
 	MODN.orientation = 0;
+	MODN.turnState = NO_TURN;
+	MODN.angleErr = 0.0;
 //	MODN.real_x_vel = &(MODN.x_vel);
 //	MODN.real_y_vel = &(MODN.y_vel);
 }
@@ -119,41 +121,41 @@ void realMODN(PSxBT_t *psx, RNS_interface_t* rns)
 	}
 	MODN.w_vel = ((psx->joyR_2) - (psx->joyL_2))* MODN.speed;
 
-//	if(MODN.motor == BRUSH)
-//	{
-//		if(MODN.x_vel==0.0 && MODN.y_vel==0.0 && MODN.w_vel==0.0){
-//			RNSStop(rns);
-//		}else{
-//			RNSEnquire(RNS_COORDINATE_X_Y_Z_Zrad, rns);
-//			float realZrad = rns->enq.enq_buffer[3].data;
-//			if(MODN.base == MODN_FWD_OMNI) {
-//				MODN.vel1 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) + MODN.w_vel*MODN.d;
-//				MODN.vel2 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) - MODN.w_vel*MODN.d;
-//				MODN.vel3 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) + MODN.w_vel*MODN.d;
-//				MODN.vel4 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) - MODN.w_vel*MODN.d;
-//				RNSVelocity(MODN.vel1, MODN.vel2, MODN.vel3, MODN.vel4, rns);
-//			}
-//			//		else if(MODN.base == MODN_MECANUM){
-//			//		*(MODN.vel1) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(1.0)  + *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
-//			//		*(MODN.vel2) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(-1.0) - *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
-//			//		*(MODN.vel3) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(-1.0) + *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
-//			//		*(MODN.vel4) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(1.0)  - *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
-//			//	}
-//			else if (MODN.base == MODN_TRI_OMNI){
-//				/*			 C
-//				 * 		   -___+
-//				 *
-//				 * 		+		  +
-//				 * 		A\		 /B
-//				 * 		  -     -
-//				 */
-//				MODN.vel3 = MODN.y_vel*sinf(-realZrad) 		 + MODN.x_vel*cosf(-realZrad)  	    + MODN.w_vel*MODN.d;
-//				MODN.vel1 = MODN.y_vel*sinf(2.0944-realZrad) + MODN.x_vel*cosf(2.0944-realZrad) + MODN.w_vel*MODN.d;
-//				MODN.vel2 = MODN.y_vel*sinf(1.0472-realZrad) + MODN.x_vel*cosf(1.0472-realZrad) - MODN.w_vel*MODN.d;
-//				RNSVelocity(MODN.vel1, MODN.vel2, MODN.vel3, 0.0, rns);
-//			}
-//		}
-//	}
+	if(MODN.motor == BRUSH)
+	{
+		if(MODN.x_vel==0.0 && MODN.y_vel==0.0 && MODN.w_vel==0.0){
+			RNSStop(rns);
+		}else{
+			RNSEnquire(RNS_COORDINATE_X_Y_Z_Zrad, rns);
+			float realZrad = rns->enq.enq_buffer[3].data;
+			if(MODN.base == MODN_FWD_OMNI) {
+				MODN.vel1 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) + MODN.w_vel*MODN.d;
+				MODN.vel2 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) - MODN.w_vel*MODN.d;
+				MODN.vel3 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) + MODN.w_vel*MODN.d;
+				MODN.vel4 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) - MODN.w_vel*MODN.d;
+				RNSVelocity(MODN.vel1, MODN.vel2, MODN.vel3, MODN.vel4, rns);
+			}
+			//		else if(MODN.base == MODN_MECANUM){
+			//		*(MODN.vel1) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(1.0)  + *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
+			//		*(MODN.vel2) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(-1.0) - *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
+			//		*(MODN.vel3) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(-1.0) + *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
+			//		*(MODN.vel4) = *(MODN.y_vel)*(1.0) + *(MODN.x_vel)*(1.0)  - *(MODN.w_vel)/*(MODN.d + MODN.e)*/;
+			//	}
+			else if (MODN.base == MODN_TRI_OMNI){
+				/*			 C
+				 * 		   -___+
+				 *
+				 * 		+		  +
+				 * 		A\		 /B
+				 * 		  -     -
+				 */
+				MODN.vel3 = MODN.y_vel*sinf(-realZrad) 		 + MODN.x_vel*cosf(-realZrad)  	    + MODN.w_vel*MODN.d;
+				MODN.vel1 = MODN.y_vel*sinf(2.0944-realZrad) + MODN.x_vel*cosf(2.0944-realZrad) + MODN.w_vel*MODN.d;
+				MODN.vel2 = MODN.y_vel*sinf(1.0472-realZrad) + MODN.x_vel*cosf(1.0472-realZrad) - MODN.w_vel*MODN.d;
+				RNSVelocity(MODN.vel1, MODN.vel2, MODN.vel3, 0.0, rns);
+			}
+		}
+	}
 	if(MODN.motor == BRUSHLESS)// Brushless motor
 	{
 		if(MODN.x_vel==0.0 && MODN.y_vel==0.0 && MODN.w_vel==0.0)
@@ -167,13 +169,33 @@ void realMODN(PSxBT_t *psx, RNS_interface_t* rns)
 		else
 		{
 			float realZrad = pp.real_z_rad;
-			sys.navi_vel = 1;
+//			MODN.angleErr = pp.real_z - (MODN.radTarget * 180 / M_PI);
+//
+//			switch(MODN.turnState){
+//			case NO_TURN:
+//				if(MODN.w_vel!=0){
+//					MODN.turnState = START_TURN;
+//					MODN.imuFeedback = 0.0;
+//				}else{
+//					PID(&IMU_PID);
+//				}
+//				break;
+//			case START_TURN:
+//				if(MODN.w_vel== 0){
+//					MODN.radTarget = realZrad;
+//					MODN.turnState = NO_TURN;
+//					PIDDelayInit(&IMU_PID);
+//				}else{
+//					MODN.imuFeedback = 0.0;
+//				}
+//				break;
+//			}
 
 			if(MODN.base == MODN_FWD_OMNI) {
-				MODN.vel1 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) + MODN.w_vel*MODN.d;
-				MODN.vel2 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) - MODN.w_vel*MODN.d;
-				MODN.vel3 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) + MODN.w_vel*MODN.d;
-				MODN.vel4 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) - MODN.w_vel*MODN.d;
+				MODN.vel1 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) + MODN.w_vel*MODN.d - MODN.imuFeedback;
+				MODN.vel2 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) - MODN.w_vel*MODN.d + MODN.imuFeedback;
+				MODN.vel3 = MODN.x_vel*cosf(2.3562-realZrad) + MODN.y_vel*sinf(2.3562-realZrad) + MODN.w_vel*MODN.d - MODN.imuFeedback;
+				MODN.vel4 = MODN.x_vel*cosf(0.7854-realZrad) + MODN.y_vel*sinf(0.7854-realZrad) - MODN.w_vel*MODN.d + MODN.imuFeedback;
 				VESCPIDProcess(MODN.vel1, MODN.vel2, MODN.vel3, MODN.vel4);
 				hb_count = HAL_GetTick();
 			}

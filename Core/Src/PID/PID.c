@@ -38,14 +38,14 @@ void PIDSourceInit (float *in, float *out, PID_t *pid)
 void PIDGainInit(float ts, float sat, float ke, float ku, float kp, float ki,
 									float kd, float kn, PID_t *pid)
 {
-	pid->K[TS] = ts;
-	pid->K[SAT] = sat;
-	pid->K[KE] = ke;
-	pid->K[KU] = ku;
-	pid->K[KP] = kp;
-	pid->K[KI] = ki;
-	pid->K[KD] = kd;
-	pid->K[KN] = kn;
+	pid->K[TS] = ts; // Sample Time
+	pid->K[SAT] = sat; // Reached saturation or not
+	pid->K[KE] = ke; // Error gain
+	pid->K[KU] = ku; // Output gain
+	pid->K[KP] = kp; // Proportional gain
+	pid->K[KI] = ki; // Integral gain
+	pid->K[KD] = kd; // Derivative gain
+	pid->K[KN] = kn; // Low pass filter
 	PIDCoeffCalc(pid);
 
 //	pid->i_flag = pid->pd_flag = pid->s_flag = 0;

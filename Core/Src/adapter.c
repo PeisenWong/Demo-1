@@ -70,6 +70,7 @@ void Initialize(){
 //	I2CxInit (&hi2c1,main_board_1, CLOCK_SPEED_400KHz,ENABLE);
 	I2CX_DMA_RX_Init(&hi2c1, &hi2c1_rx_dma, main_board_1, CLOCK_SPEED_400KHz);
 //	I2CX_DMA_RX_Init(&hi2c2, &hi2c2_rx_dma, main_board_1, CLOCK_SPEED_400KHz);
+//	I2CX_DMA_RX_Init(&hi2c3, &hi2c3_rx_dma, main_board_1, CLOCK_SPEED_400KHz);
 //	I2CxInit(&hi2c2, main_board_1, CLOCK_SPEED_100KHz, ENABLE);
 
 	//Servo Driver - recommended to use 100KHz I2C as 400KHz hang frequently
@@ -86,7 +87,7 @@ void Initialize(){
 	//	QEIInit(&htim8);
 
 	CANxInit(&hcan1,4,CAN_FILTER_FIFO0,0,0,0,CAN_500KHz);
-	CANxInit(&hcan2,4,CAN_FILTER_FIFO0,0,0,0,CAN_500KHz);
+	CANxInit(&hcan2,4,CAN_FILTER_FIFO1,0,0,14,CAN_500KHz);
 
 	PWMTimeBaseInit(&htim3, 19999, 83);
 	PWMChannelConfig(&htim3, TIM_CHANNEL_3, TIM3_CHANNEL3_PIN);
@@ -266,7 +267,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 			}
 		}
 		CAN_PROCESS(source);
-		HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
+		HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 	}
 }
 

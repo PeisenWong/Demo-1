@@ -67,6 +67,7 @@ struct {
 	MotorType_t motor;
 	uint8_t turnState;
 	float radTol;
+	float angleErr;
 	float imuGain;
 	float imuFeedback;
 	float radTarget;
